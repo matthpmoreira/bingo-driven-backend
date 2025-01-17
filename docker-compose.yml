@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres
+    container_name: bingo-driven-postgres
+    networks:
+      - bingo-driven-network
+    volumes:
+      - bingo-driven-volume:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: user
+      POSTGRES_DB: bingo
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: arzcbnh/bingo-driven-backend
+    container_name: bingo-driven-backend
+    ports:
+      - 5000:5000
+    networks:
+      - bingo-driven-network
+    environment:
+      DATABASE_URL: postgres://user:password@postgres:5432/bingo?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+networks:
+  bingo-driven-network:
+
+volumes:
+  bingo-driven-volume:

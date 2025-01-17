@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres
+    container_name: bingo-driven-postgres-tests
+    networks:
+      - bingo-driven-tests-network
+    volumes:
+      - bingo-driven-tests-volume:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tests
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -q -d tests -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    container_name: bingo-driven-backend-tests
+    build: .
+    ports:
+      - 5000:5000
+    networks:
+      - bingo-driven-tests-network
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/tests
+    command: sh -c "npx prisma generate && npm run test:migration && exec npm run test"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+networks:
+  bingo-driven-tests-network:
+
+volumes:
+  bingo-driven-tests-volume:
